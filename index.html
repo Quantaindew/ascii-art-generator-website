@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-theme {
+            background-color: #333;
+            color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+        }
+        #dropzone-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #dropzone {
+            border: 2px dashed #ccc;
+            border-radius: 20px;
+            width: 800px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            overflow: hidden;
+            position: relative;
+        }
+        #dropzone:hover {
+            background-color: #e0e0e0;
+        }
+        body.dark-theme #dropzone:hover {
+            background-color: #444;
+        }
+        #dropzone.dragover {
+            background-color: #d0d0d0;
+        }
+        body.dark-theme #dropzone.dragover {
+            background-color: #555;
+        }
+        #dropzone-text {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+        }
+        #preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+            object-fit: contain;
+        }
+        #output {
+            white-space: pre;
+            font-family: monospace;
+            line-height: 1.2;
+            overflow: auto;
+            background-color: white;
+            color: #000000;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 137px;
+        }
+        body.dark-theme #output {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        #width-input {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #width-input input {
+            width: 60px;
+            margin-left: 10px;
+        }
+        #copy-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        #copy-button:hover {
+            background-color: #333;
+            color: #f0f0f0;
+        }
+        body.dark-theme #copy-button {
+            background-color: #333;
+            color: #f0f0f0;
+        }
+        body.dark-theme #copy-button:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        #theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #f0f0f000;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 21px;
+            font-weight: bold;
+        }
+        body.dark-theme #theme-toggle {
+            background-color: #33333300;
+            color: #f0f0f0;
+        }
+        #theme-toggle:hover {
+            transform: scale(1.05);
+        }
+        #color-toggle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-left: 10px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #f0f0f0;
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid #333;
+  
+        }
+        body.dark-theme .slider {
+            background-color: #f0f0f0;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 25px;
+            width: 25px;
+            left: 4px;
+            bottom: 4px;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #f0f0f0;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        #color-mode-text {
+            transition: color 0.3s;
+        }
+        #color-mode-text.rainbow {
+            background-image: linear-gradient(to left, violet, indigo, blue, green, yellow, orange, red);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbow_animation 6s ease-in-out infinite;
+            background-size: 400% 100%;
+        }
+        @keyframes rainbow_animation {
+            0%,100% {
+                background-position: 0 0;
+            }
+            50% {
+                background-position: 100% 0;
+            }
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    <h1>ASCII Art Generator</h1>
+    <button id="theme-toggle">🌙</button>
+    <div id="dropzone-container">
+        <div id="dropzone">
+            <span id="dropzone-text">Drop an image here or click to upload</span>
+            <img id="preview-image" alt="Preview">
+        </div>
+    </div>
+    <div id="width-input">
+        <label for="output-width">Output Width:</label>
+        <input type="number" id="output-width" value="320" min="1" max="1000000">
+    </div>
+    <div id="color-toggle">
+        <label for="color-mode"><span id="color-mode-text" class="rainbow">Color Mode:</span></label>
+        <label class="switch">
+            <input type="checkbox" id="color-mode" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div id="output"></div>
+    <button id="copy-button" style="display: none;">Copy to Clipboard</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/ansi_up@5.0.1/ansi_up.min.js"></script>
+    <script src="ascii_generator.js"></script>
+    <script>
+        let wasmModule;
+
+        Module.onRuntimeInitialized = async () => {
+            wasmModule = Module;
+            console.log('WebAssembly module loaded');
+        };
+
+        const dropzoneContainer = document.getElementById('dropzone-container');
+        const dropzone = document.getElementById('dropzone');
+        const dropzoneText = document.getElementById('dropzone-text');
+        const previewImage = document.getElementById('preview-image');
+        const output = document.getElementById('output');
+        const outputWidthInput = document.getElementById('output-width');
+        const copyButton = document.getElementById('copy-button');
+        const themeToggle = document.getElementById('theme-toggle');
+        const colorModeToggle = document.getElementById('color-mode');
+        const colorModeText = document.getElementById('color-mode-text');
+
+        dropzone.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = handleFile;
+            input.click();
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFile({ target: { files: [file] } });
+            }
+        });
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        previewImage.src = e.target.result;
+                        previewImage.style.display = 'block';
+                        dropzoneText.style.display = 'none';
+
+                        const scaledWidth = Math.round(img.width * 0.5);
+                        const scaledHeight = Math.round(img.height * 0.5);
+
+                        dropzone.style.width = scaledWidth + 'px';
+                        dropzone.style.height = scaledHeight + 'px';
+
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        generateASCII(imageData);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function generateASCII(imageData) {
+            if (!wasmModule) {
+                console.error('WebAssembly module not loaded');
+                return;
+            }
+
+            const outputWidth = parseInt(outputWidthInput.value, 10);
+            const { width, height, data } = imageData;
+            const channels = 4; // RGBA
+
+            const imagePtr = wasmModule._malloc(width * height * channels);
+            wasmModule.HEAPU8.set(data, imagePtr);
+
+            const asciiPtr = wasmModule.ccall(
+                'generate_ascii_wasm',
+                'number',
+                ['number', 'number', 'number', 'number', 'number', 'number'],
+                [imagePtr, width, height, channels, outputWidth, colorModeToggle.checked ? 1 : 0]
+            );
+
+            const asciiArt = wasmModule.UTF8ToString(asciiPtr);
+
+            if (colorModeToggle.checked) {
+                const ansiUp = new AnsiUp();
+                output.innerHTML = ansiUp.ansi_to_html(asciiArt);
+            } else {
+                output.textContent = asciiArt;
+            }
+
+            adjustFontSize();
+
+            wasmModule._free(imagePtr);
+            wasmModule._free(asciiPtr);
+
+            copyButton.style.display = 'block';
+        }
+
+        function adjustFontSize() {
+            const desiredWidth = parseInt(outputWidthInput.value, 10);
+            const containerWidth = output.offsetWidth;
+
+            let fontSize = 1;
+            output.style.fontSize = `${fontSize}px`;
+
+            while (output.scrollWidth <= containerWidth && fontSize < 20) {
+                fontSize++;
+                output.style.fontSize = `${fontSize}px`;
+            }
+
+            fontSize--;
+            output.style.fontSize = `${fontSize}px`;
+        }
+
+        outputWidthInput.addEventListener('change', () => {
+            const img = document.querySelector('#preview-image');
+            if (img.src) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                generateASCII(imageData);
+            }
+        });
+
+        colorModeToggle.addEventListener('change', () => {
+            const img = document.querySelector('#preview-image');
+            if (img.src) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                generateASCII(imageData);
+            }
+            colorModeText.classList.toggle('rainbow', colorModeToggle.checked);
+        });
+
+        copyButton.addEventListener('click', () => {
+            const asciiArt = output.textContent;
+            navigator.clipboard.writeText(asciiArt).then(() => {
+                alert('ASCII art copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy ASCII art. Please try again.');
+            });
+        });
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            themeToggle.textContent = document.body.classList.contains('dark-theme') ? '🌙' : '🌞';
+        });
+
+        // Initialize color mode
+        colorModeText.classList.add('rainbow');
+    </script>
+</body>
+</html>
