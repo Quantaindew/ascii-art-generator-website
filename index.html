@@ -121,10 +121,42 @@
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
+        .output-wrapper {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 100px); /* Adjust height to fill available space */
+            min-height: 500px;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .output-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            background-color: var(--accent-dark);
+        }
+
         #output {
             font-family: 'IBM Plex Mono', monospace;
-            line-height: 1.2;
+            line-height: 1.1;
             tab-size: 1;
+            white-space: pre;
+            display: inline-block;
+            transform-origin: center center;
+            position: relative;
+            padding: 0;
+            margin: 0;
+            font-size: 10px; /* Base size that will be scaled */
+            max-width: none;
+            max-height: none;
         }
 
         .dark #output {
@@ -211,14 +243,14 @@
 <body class="dark matrix-bg min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
-        <header class="flex justify-between items-center mb-12">
-            <div>
-                <h1 class="text-4xl md:text-6xl font-bold glitch-text tracking-tight mb-2">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 relative">
+            <div class="mb-4 sm:mb-0">
+                <h1 class="text-3xl sm:text-4xl md:text-6xl font-bold glitch-text tracking-tight mb-2">
                     ASCII.transform()
                 </h1>
                 <p class="text-sm tracking-wide opacity-70">[SYSTEM::READY]</p>
             </div>
-            <button id="theme-toggle" class="cyber-button text-sm">
+            <button id="theme-toggle" class="cyber-button text-sm absolute top-0 right-0 sm:relative sm:top-auto sm:right-auto">
                 TOGGLE_THEME
             </button>
         </header>
@@ -247,8 +279,8 @@
                     <div class="flex items-center space-x-4">
                         <input type="range" id="output-width" 
                                class="input-range"
-                               min="20" max="400" value="120">
-                        <span id="width-value" class="font-mono w-12 text-right">120</span>
+                               min="20" max="1000" value="320">
+                        <span id="width-value" class="font-mono w-12 text-right">320</span>
                     </div>
                 </div>
 
@@ -278,7 +310,11 @@
                 <div class="p-2 border-b border-current">
                     <span class="text-sm opacity-70">OUTPUT_PREVIEW:~$</span>
                 </div>
-                <div id="output" class="whitespace-pre overflow-auto p-4 min-h-[400px]"></div>
+                <div class="output-wrapper">
+                    <div class="output-container">
+                        <div id="output"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -370,12 +406,25 @@
             currentRequestId++;
             elements.status.textContent = 'CONVERTING...';
             elements.output.classList.add('loading');
+            
+            // Calculate appropriate width based on screen size
+            const calculateWidth = () => {
+                const screenWidth = window.innerWidth;
+                let baseWidth = parseInt(elements.outputWidth.value, 10);
+                
+                // Adjust width for mobile screens
+                if (screenWidth < 768) {
+                    baseWidth = Math.min(baseWidth, Math.floor(screenWidth / 8));
+                }
+                
+                return baseWidth;
+            };
 
             asciiWorker.postMessage({
                 type: 'generate',
                 data: {
                     imageData,
-                    width: parseInt(elements.outputWidth.value, 10),
+                    width: calculateWidth(),
                     useColor: elements.colorMode.checked,
                     requestId: currentRequestId
                 }
@@ -477,6 +526,64 @@
         // Watch for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             elements.body.classList.toggle('dark', e.matches);
+        });
+
+        function fitAsciiArt() {
+            const output = elements.output;
+            const container = output.parentElement;
+            const wrapper = container.parentElement;
+            
+            // Reset any existing transforms
+            output.style.transform = 'none';
+            
+            // Get available space dimensions
+            const availableWidth = wrapper.clientWidth;
+            const availableHeight = wrapper.clientHeight;
+            
+            // Get content dimensions at base size
+            const contentWidth = output.scrollWidth;
+            const contentHeight = output.scrollHeight;
+            
+            // Calculate scaling factors to fill the space
+            const scaleX = availableWidth / contentWidth;
+            const scaleY = availableHeight / contentHeight;
+            
+            // Use the smaller scaling factor to maintain aspect ratio
+            // but ensure we fill as much space as possible
+            const scale = Math.min(scaleX, scaleY) * 0.98; // 0.98 for a tiny margin
+            
+            // Calculate centered position
+            const scaledWidth = contentWidth * scale;
+            const scaledHeight = contentHeight * scale;
+            
+            // Center the output
+            output.style.transform = `scale(${scale})`;
+            
+            // Adjust container positioning if needed
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+            
+            // Store the current scale for reference
+            output.dataset.currentScale = scale;
+        }
+
+        // Enhance the resize handler with debouncing
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            if (elements.output.textContent) {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    requestAnimationFrame(() => fitAsciiArt());
+                }, 100);
+            }
+        });
+
+        // Also refit when scrolling to ensure proper display
+        document.addEventListener('scroll', () => {
+            if (elements.output.textContent) {
+                requestAnimationFrame(() => fitAsciiArt());
+            }
         });
 
         // Initialize status
