@@ -202,6 +202,7 @@
         }
 
         .dark .mode-toggle.active::after {
+            transform: translateX(30px);
             background: var(--bg-dark);
         }
 
@@ -216,6 +217,11 @@
         }
 
         .status-text {
+            font-size: 0.75rem;
+            color: #000;
+        }
+
+        .dark .status-text {
             font-size: 0.75rem;
             color: var(--neon-blue);
         }
