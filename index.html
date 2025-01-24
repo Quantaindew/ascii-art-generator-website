@@ -186,15 +186,23 @@
             position: absolute;
             width: 26px;
             height: 26px;
-            background: var(--bg-dark);
+            background: var(--bg-light);
             top: 2px;
             left: 2px;
-            transition: transform 0.3s;
+            transition: transform 0.3s, background 0.3s;
         }
 
         .mode-toggle.active::after {
             transform: translateX(30px);
-            background: var(--text-dark);
+            background: var(--bg-light);
+        }
+
+        .dark .mode-toggle::after {
+            background: var(--bg-dark);
+        }
+
+        .dark .mode-toggle.active::after {
+            background: var(--bg-dark);
         }
 
         #preview-image {
