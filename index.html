@@ -361,23 +361,21 @@
             const { type, requestId, ascii, error } = e.data;
 
             switch (type) {
-                case 'initialized':
-                    elements.status.textContent = 'SYSTEM_READY';
-                    break;
-
-                case 'result':
-                    if (requestId === currentRequestId) {
-                        if (elements.colorMode.checked) {
-                            const ansiUp = new AnsiUp();
-                            elements.output.innerHTML = ansiUp.ansi_to_html(ascii);
-                        } else {
-                            elements.output.textContent = ascii;
-                        }
-                        elements.status.textContent = 'CONVERSION_COMPLETE';
-                        elements.copyButton.classList.remove('hidden');
-                        elements.downloadButton.classList.remove('hidden');
-                    }
-                    break;
+          case 'result':
+              if (requestId === currentRequestId) {
+                  if (elements.colorMode.checked) {
+                      const ansiUp = new AnsiUp();
+                      elements.output.innerHTML = ansiUp.ansi_to_html(ascii);
+                  } else {
+                      elements.output.textContent = ascii;
+                  }
+                  // Apply scaling immediately after content update
+                  fitAsciiArt();
+                  elements.status.textContent = 'CONVERSION_COMPLETE';
+                  elements.copyButton.classList.remove('hidden');
+                  elements.downloadButton.classList.remove('hidden');
+              }
+              break;
 
                 case 'error':
                     elements.status.textContent = `ERROR: ${error}`;
